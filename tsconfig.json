@@ -11,7 +11,8 @@
     "baseUrl": "src",
     "outDir": "lib",
     "noEmit": true,
-    "types": ["bun-types"]
+    "types": ["bun-types"],
+    "skipLibCheck": true
   },
   "include": ["src", "bun-plugins.ts"],
   "exclude": ["node_modules"]

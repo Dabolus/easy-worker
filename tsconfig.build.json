@@ -10,7 +10,8 @@
     "forceConsistentCasingInFileNames": true,
     "baseUrl": "src",
     "outDir": "lib",
-    "declaration": true
+    "declaration": true,
+    "skipLibCheck": true
   },
   "include": ["src"],
   "exclude": ["node_modules", "src**/*.test.ts"]
