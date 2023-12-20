@@ -1,6 +1,8 @@
 /// <reference lib="webworker" />
 
 import type {
+  SetupWorkerServerOptions,
+  WorkerServerTarget,
   WrappedMethodFulfilledResultMessageEvent,
   WrappedMethodRejectedResultMessageEvent,
   WrappedMethodRequestMessageEvent,
@@ -14,11 +16,16 @@ const isWrappedMethodRequestMessageEvent = (
   event.data.method &&
   wrappedMethods.includes(event.data.method);
 
-export const setupWorkerServer = <T extends Worker, U = Omit<T, keyof Worker>>(
+export const setupWorkerServer = <
+  T extends Worker,
+  U = Omit<T, keyof Worker>,
+  V extends WorkerServerTarget = WorkerServerTarget,
+>(
   methods: U,
+  { target = self as unknown as V }: SetupWorkerServerOptions<V> = {},
 ) => {
   const methodsNames = Object.keys(methods as Record<string, unknown>);
-  self.addEventListener('message', async event => {
+  target.addEventListener('message', async event => {
     if (!isWrappedMethodRequestMessageEvent(event, methodsNames)) {
       return;
     }
@@ -27,7 +34,7 @@ export const setupWorkerServer = <T extends Worker, U = Omit<T, keyof Worker>>(
       const result = await (methods[method as keyof U] as Function)(
         ...(args || []),
       );
-      self.postMessage({
+      target.postMessage({
         id,
         method,
         args,
@@ -35,7 +42,7 @@ export const setupWorkerServer = <T extends Worker, U = Omit<T, keyof Worker>>(
         value: result,
       } satisfies WrappedMethodFulfilledResultMessageEvent);
     } catch (error) {
-      self.postMessage({
+      target.postMessage({
         id,
         method,
         args,
@@ -56,7 +63,7 @@ export const setupWorkerServer = <T extends Worker, U = Omit<T, keyof Worker>>(
     }
   });
 
-  return methods;
+  return target;
 };
 
 export default setupWorkerServer;

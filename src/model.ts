@@ -7,6 +7,11 @@ export type PromisifiedObject<T extends {}> = {
 export type PromisifiedWorker<T extends Worker> = Worker &
   PromisifiedObject<Omit<T, keyof Worker>>;
 
+export type WorkerServerTarget = Pick<
+  typeof globalThis,
+  'addEventListener' | 'postMessage'
+>;
+
 export interface WrappedMethodRequestMessageEvent {
   id: string;
   method: string;
@@ -25,4 +30,10 @@ export interface SetupWorkerClientOptions<
 > {
   timeout?: number;
   getMethodCallId?: (method: keyof U, args: unknown[]) => string;
+}
+
+export interface SetupWorkerServerOptions<
+  V extends WorkerServerTarget = WorkerServerTarget,
+> {
+  target?: V;
 }
