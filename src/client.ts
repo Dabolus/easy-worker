@@ -7,7 +7,7 @@ export const setupWorkerClient = <T extends Worker, U = Omit<T, keyof Worker>>(
   methods: (keyof U)[],
   {
     timeout = 30000,
-    getMethodCallId = () => Math.random().toString(36).slice(2),
+    getMethodCallId = () => crypto.randomUUID(),
   }: SetupWorkerClientOptions<T, U> = {},
 ): PromisifiedWorker<T> => {
   const eventsQueueMap: Record<
