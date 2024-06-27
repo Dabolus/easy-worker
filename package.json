@@ -1,6 +1,6 @@
 {
   "name": "@easy-worker/core",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "A tiny library that simplifies calling functions in a worker by handling events and turning them into promises.",
   "type": "module",
   "main": "lib/index.js",
