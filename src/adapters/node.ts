@@ -5,16 +5,10 @@ export interface NodeWorker {
   postMessage(value: any): void;
 }
 
-export interface NodeWorkerInterface extends WorkerInterface {
-  nodePostMessage(value: any): void;
-}
-
 export const nodeAdapter = <T extends NodeWorker>(
   nodeWorker: T,
-): T & NodeWorkerInterface =>
-  Object.assign<T, Omit<NodeWorkerInterface, 'postMessage'>>(nodeWorker, {
-    // Keep the real postMessage method
-    nodePostMessage: nodeWorker.postMessage.bind(nodeWorker),
+): T & WorkerInterface =>
+  Object.assign<T, Pick<WorkerInterface, 'addEventListener'>>(nodeWorker, {
     addEventListener: (_, listener) => {
       const wrappedListener = (data: any) => {
         if ('handleEvent' in listener) {
