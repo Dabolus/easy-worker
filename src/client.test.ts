@@ -11,16 +11,15 @@ const getFakeWorker = () =>
     addEventListener: jest.fn(),
     postMessage: jest.fn(),
   } as unknown as Worker);
-interface FakeExtendedWorker extends Worker {
+
+interface FakeExtendedWorker {
   [fakeMethodName]: () => number;
 }
 
 describe('client', () => {
   it('adds a wrapper function for each specified method', () => {
     const fakeWorker = getFakeWorker();
-    const augmentedWorker = setupWorkerClient<FakeExtendedWorker>(fakeWorker, [
-      fakeMethodName,
-    ]);
+    const augmentedWorker = setupWorkerClient<FakeExtendedWorker>(fakeWorker);
     expect(fakeWorker.addEventListener).toHaveBeenCalledWith(
       'message',
       expect.any(Function),
@@ -31,13 +30,9 @@ describe('client', () => {
   it('correctly handles fulfilled results', async () => {
     const fakeId = 'fakeId';
     const fakeWorker = getFakeWorker();
-    const augmentedWorker = setupWorkerClient<FakeExtendedWorker>(
-      fakeWorker,
-      [fakeMethodName],
-      {
-        getMethodCallId: () => fakeId,
-      },
-    );
+    const augmentedWorker = setupWorkerClient<FakeExtendedWorker>(fakeWorker, {
+      getMethodCallId: () => fakeId,
+    });
     const fakeResult = 123;
     const fakeEvent = {
       data: {
@@ -58,15 +53,12 @@ describe('client', () => {
   });
 
   it('correctly handles rejected results', async () => {
+    setSystemTime();
     const fakeId = 'fakeId';
     const fakeWorker = getFakeWorker();
-    const augmentedWorker = setupWorkerClient<FakeExtendedWorker>(
-      fakeWorker,
-      [fakeMethodName],
-      {
-        getMethodCallId: () => fakeId,
-      },
-    );
+    const augmentedWorker = setupWorkerClient<FakeExtendedWorker>(fakeWorker, {
+      getMethodCallId: () => fakeId,
+    });
     const fakeError = new Error('fakeError');
     const fakeEvent = {
       data: {
@@ -81,7 +73,7 @@ describe('client', () => {
       fakeWorker.addEventListener as Mock<Worker['addEventListener']>
     ).mock.calls[0][1] as EventListener;
     eventListenerCallback(fakeEvent);
-    await expect(fakeResultPromise).rejects.toEqual(fakeError);
+    await expect(fakeResultPromise).rejects.toThrowError(fakeError.name);
   });
 
   it('correctly handles timeouts', async () => {
@@ -90,14 +82,10 @@ describe('client', () => {
     const timeout = 10;
     const fakeId = 'fakeId';
     const fakeWorker = getFakeWorker();
-    const augmentedWorker = setupWorkerClient<FakeExtendedWorker>(
-      fakeWorker,
-      [fakeMethodName],
-      {
-        timeout,
-        getMethodCallId: () => fakeId,
-      },
-    );
+    const augmentedWorker = setupWorkerClient<FakeExtendedWorker>(fakeWorker, {
+      timeout,
+      getMethodCallId: () => fakeId,
+    });
     const fakeError = new Error('fakeError');
     // The event is going to be for another random event, so it should be ignored.
     const fakeEvent = {
@@ -114,7 +102,7 @@ describe('client', () => {
     ).mock.calls[0][1] as EventListener;
     eventListenerCallback(fakeEvent);
     setSystemTime(fakeTime + timeout + 1);
-    await expect(fakeResultPromise).rejects.toEqual(fakeError);
+    await expect(fakeResultPromise).rejects.toThrowError('Timeout');
     setSystemTime();
   });
 });

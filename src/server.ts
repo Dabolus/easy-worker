@@ -1,6 +1,9 @@
 /// <reference lib="webworker" />
 
 import type {
+  Ctor,
+  Fn,
+  KeyVal,
   SetupWorkerServerOptions,
   WorkerServerTarget,
   WrappedMethodFulfilledResultMessageEvent,
@@ -16,22 +19,43 @@ const isWrappedMethodRequestMessageEvent = (
   event.data.method &&
   wrappedMethods.includes(event.data.method);
 
+const isCtor = (obj: unknown): obj is Ctor =>
+  typeof obj === 'function' && obj.toString().startsWith('class ');
+
+const getInstance = <T extends KeyVal | Fn | Ctor>(
+  obj: T,
+): T extends Ctor ? InstanceType<T> : T extends Fn ? ReturnType<T> : T => {
+  if (typeof obj !== 'function') {
+    // FIXME: understand what the heck should this type be
+    return obj as any;
+  }
+  return isCtor(obj) ? new obj() : obj();
+};
+
 export const setupWorkerServer = <
-  T extends Worker,
-  U = Omit<T, keyof Worker>,
-  V extends WorkerServerTarget = WorkerServerTarget,
+  T extends KeyVal | Fn | Ctor,
+  U extends WorkerServerTarget = WorkerServerTarget,
 >(
-  methods: U,
-  { target = self as unknown as V }: SetupWorkerServerOptions<V> = {},
+  methods: T,
+  { target = self as unknown as U }: SetupWorkerServerOptions<U> = {},
 ) => {
-  const methodsNames = Object.keys(methods as Record<string, unknown>);
+  const instance = getInstance(methods);
+  const methodsNames = Object.getOwnPropertyNames(
+    'constructor' in instance && isCtor(instance.constructor)
+      ? Object.getPrototypeOf(instance)
+      : instance,
+  ).filter(
+    name =>
+      typeof instance[name as keyof typeof instance] === 'function' &&
+      name !== 'constructor',
+  );
   target.addEventListener('message', async event => {
     if (!isWrappedMethodRequestMessageEvent(event, methodsNames)) {
       return;
     }
     const { id, method, args } = event.data;
     try {
-      const result = await (methods[method as keyof U] as Function)(
+      const result = await (instance[method as keyof T] as Function)(
         ...(args || []),
       );
       target.postMessage({

@@ -1,16 +1,21 @@
+export type KeyVal = Record<string, any>;
+
+export type Fn = (...args: any[]) => any;
+
+export type Ctor = new (...args: any[]) => any;
+
 export type PromisifiedObject<T extends {}> = {
   [K in keyof T]: T[K] extends (...args: infer A) => infer R
     ? (...args: A) => Promise<Awaited<R>>
     : T[K];
 };
 
-export type PromisifiedWorker<T extends Worker> = Worker &
-  PromisifiedObject<Omit<T, keyof Worker>>;
+export type PromisifiedWorker<T extends KeyVal> = Worker & PromisifiedObject<T>;
 
-export type WorkerServerTarget = Pick<
-  typeof globalThis,
-  'addEventListener' | 'postMessage'
->;
+export interface WorkerServerTarget {
+  addEventListener: Worker['addEventListener'];
+  postMessage: Worker['postMessage'];
+}
 
 export interface WrappedMethodRequestMessageEvent {
   id: string;
@@ -24,12 +29,9 @@ export type WrappedMethodFulfilledResultMessageEvent<T = unknown> =
 export type WrappedMethodRejectedResultMessageEvent =
   WrappedMethodRequestMessageEvent & PromiseRejectedResult;
 
-export interface SetupWorkerClientOptions<
-  T extends Worker,
-  U = Omit<T, keyof Worker>,
-> {
+export interface SetupWorkerClientOptions<T extends KeyVal> {
   timeout?: number;
-  getMethodCallId?: (method: keyof U, args: unknown[]) => string;
+  getMethodCallId?: (method: keyof T, args: unknown[]) => string;
 }
 
 export interface SetupWorkerServerOptions<

@@ -1,14 +1,17 @@
 /// <reference lib="dom" />
 
-import type { PromisifiedWorker, SetupWorkerClientOptions } from './model.js';
+import type {
+  KeyVal,
+  PromisifiedWorker,
+  SetupWorkerClientOptions,
+} from './model.js';
 
-export const setupWorkerClient = <T extends Worker, U = Omit<T, keyof Worker>>(
+export const setupWorkerClient = <T extends KeyVal>(
   worker: Worker,
-  methods: (keyof U)[],
   {
     timeout = 30000,
     getMethodCallId = () => crypto.randomUUID(),
-  }: SetupWorkerClientOptions<T, U> = {},
+  }: SetupWorkerClientOptions<T> = {},
 ): PromisifiedWorker<T> => {
   const eventsQueueMap: Record<
     string,
@@ -29,32 +32,34 @@ export const setupWorkerClient = <T extends Worker, U = Omit<T, keyof Worker>>(
     }
   });
 
-  return Object.assign(
-    worker,
-    Object.fromEntries(
-      methods.map(method => [
-        method,
-        (...args: unknown[]) =>
-          new Promise((resolve, reject) => {
-            const id = getMethodCallId(method, args);
-            const handle = setTimeout(() => {
-              delete eventsQueueMap[id];
-              reject(new Error('Timeout'));
-            }, timeout);
-            const wrappedResolve: typeof resolve = (...args) => {
-              clearTimeout(handle);
-              return resolve(...args);
-            };
-            eventsQueueMap[id] = { resolve: wrappedResolve, reject };
-            worker.postMessage({
-              id,
-              method,
-              args,
-            });
-          }),
-      ]),
-    ),
-  ) as PromisifiedWorker<T>;
+  return new Proxy(worker, {
+    get(target, property) {
+      if (property in target) {
+        return target[property as keyof typeof target];
+      }
+      if (typeof property === 'symbol') {
+        return;
+      }
+      return (...args: unknown[]) =>
+        new Promise((resolve, reject) => {
+          const id = getMethodCallId(property, args);
+          const handle = setTimeout(() => {
+            delete eventsQueueMap[id];
+            reject(new Error('Timeout'));
+          }, timeout);
+          const wrappedResolve: typeof resolve = (...args) => {
+            clearTimeout(handle);
+            return resolve(...args);
+          };
+          eventsQueueMap[id] = { resolve: wrappedResolve, reject };
+          worker.postMessage({
+            id,
+            method: property,
+            args,
+          });
+        });
+    },
+  }) as PromisifiedWorker<T>;
 };
 
 export default setupWorkerClient;
