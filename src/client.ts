@@ -4,15 +4,19 @@ import type {
   KeyVal,
   PromisifiedWorker,
   SetupWorkerClientOptions,
+  WorkerInterface,
 } from './model.js';
 
-export const setupWorkerClient = <T extends KeyVal>(
-  worker: Worker,
+export const setupWorkerClient = <
+  T extends KeyVal,
+  U extends WorkerInterface = WorkerInterface,
+>(
+  worker: U,
   {
     timeout = 30000,
     getMethodCallId = () => crypto.randomUUID(),
-  }: SetupWorkerClientOptions<T> = {},
-): PromisifiedWorker<T> => {
+  }: SetupWorkerClientOptions<U> = {},
+): PromisifiedWorker<T, U> => {
   const eventsQueueMap: Record<
     string,
     { resolve: Function; reject: Function }
@@ -42,7 +46,7 @@ export const setupWorkerClient = <T extends KeyVal>(
       }
       return (...args: unknown[]) =>
         new Promise((resolve, reject) => {
-          const id = getMethodCallId(property, args);
+          const id = getMethodCallId(property as keyof U, args);
           const handle = setTimeout(() => {
             delete eventsQueueMap[id];
             reject(new Error('Timeout'));
@@ -59,7 +63,7 @@ export const setupWorkerClient = <T extends KeyVal>(
           });
         });
     },
-  }) as PromisifiedWorker<T>;
+  }) as PromisifiedWorker<T, U>;
 };
 
 export default setupWorkerClient;

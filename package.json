@@ -18,6 +18,14 @@
     "./server": {
       "import": "./lib/server.js",
       "types": "./lib/server.d.ts"
+    },
+    "./adapters": {
+      "import": "./lib/adapters/index.js",
+      "types": "./lib/adapters/index.d.ts"
+    },
+    "./adapters/node": {
+      "import": "./lib/adapters/node.js",
+      "types": "./lib/adapters/node.d.ts"
     }
   },
   "scripts": {

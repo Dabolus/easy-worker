@@ -4,15 +4,16 @@ import type {
   Ctor,
   Fn,
   KeyVal,
+  MessageEventPayload,
   SetupWorkerServerOptions,
-  WorkerServerTarget,
+  WorkerInterface,
   WrappedMethodFulfilledResultMessageEvent,
   WrappedMethodRejectedResultMessageEvent,
   WrappedMethodRequestMessageEvent,
 } from './model.js';
 
 const isWrappedMethodRequestMessageEvent = (
-  event: MessageEvent<any>,
+  event: MessageEventPayload,
   wrappedMethods: string[],
 ): event is MessageEvent<WrappedMethodRequestMessageEvent> =>
   event.data.id &&
@@ -34,7 +35,7 @@ const getInstance = <T extends KeyVal | Fn | Ctor>(
 
 export const setupWorkerServer = <
   T extends KeyVal | Fn | Ctor,
-  U extends WorkerServerTarget = WorkerServerTarget,
+  U extends WorkerInterface = WorkerInterface,
 >(
   methods: T,
   { target = self as unknown as U }: SetupWorkerServerOptions<U> = {},

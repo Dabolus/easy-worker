@@ -10,12 +10,25 @@ export type PromisifiedObject<T extends {}> = {
     : T[K];
 };
 
-export type PromisifiedWorker<T extends KeyVal> = Worker & PromisifiedObject<T>;
+export type MessageEventPayload = { data: any };
 
-export interface WorkerServerTarget {
-  addEventListener: Worker['addEventListener'];
-  postMessage: Worker['postMessage'];
+export type MessageEventListenerFn = (event: MessageEventPayload) => void;
+
+export type MessageEventListenerObject = {
+  handleEvent: MessageEventListenerFn;
+};
+
+export type MessageEventListener =
+  | MessageEventListenerFn
+  | MessageEventListenerObject;
+
+export interface WorkerInterface {
+  addEventListener(type: 'message', listener: MessageEventListener): void;
+  postMessage(message: any): void;
 }
+
+export type PromisifiedWorker<T extends KeyVal, U extends WorkerInterface> = U &
+  PromisifiedObject<T>;
 
 export interface WrappedMethodRequestMessageEvent {
   id: string;
@@ -35,7 +48,7 @@ export interface SetupWorkerClientOptions<T extends KeyVal> {
 }
 
 export interface SetupWorkerServerOptions<
-  V extends WorkerServerTarget = WorkerServerTarget,
+  V extends WorkerInterface = WorkerInterface,
 > {
   target?: V;
 }
